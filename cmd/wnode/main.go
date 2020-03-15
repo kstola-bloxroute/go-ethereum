@@ -279,15 +279,16 @@ func initialize() {
 
 	server = &p2p.Server{
 		Config: p2p.Config{
-			PrivateKey:     nodeid,
-			MaxPeers:       maxPeers,
-			Name:           common.MakeName("wnode", "6.0"),
-			Protocols:      shh.Protocols(),
-			ListenAddr:     *argIP,
-			NAT:            nat.Any(),
-			BootstrapNodes: peers,
-			StaticNodes:    peers,
-			TrustedNodes:   peers,
+			PrivateKey:       nodeid,
+			MaxPeers:         maxPeers,
+			Name:             common.MakeName("wnode", "6.0"),
+			Protocols:        shh.Protocols(),
+			ListenAddr:       *argIP,
+			NAT:              nat.Any(),
+			BootstrapNodes:   peers,
+			StaticNodes:      peers,
+			TrustedNodes:     peers,
+			BlacklistedNodes: make([]string, 12),
 		},
 	}
 }

@@ -155,6 +155,11 @@ web3._extend({
 			params: 1
 		}),
 		new web3._extend.Method({
+			name: 'blacklistPeer',
+			call: 'admin_blacklistPeer',
+			params: 1
+		}),
+		new web3._extend.Method({
 			name: 'removePeer',
 			call: 'admin_removePeer',
 			params: 1

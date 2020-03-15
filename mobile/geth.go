@@ -129,6 +129,7 @@ func NewNode(datadir string, config *NodeConfig) (stack *Node, _ error) {
 			ListenAddr:       ":0",
 			NAT:              nat.Any(),
 			MaxPeers:         config.MaxPeers,
+			BlacklistedNodes: make([]string, 12),
 		},
 	}
 

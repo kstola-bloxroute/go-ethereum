@@ -26,6 +26,19 @@ import (
 	"github.com/davecgh/go-spew/spew"
 )
 
+func TestNetListAdd(t *testing.T) {
+	var nl Netlist
+	ipString := "86.247.48.240/32"
+	_, _, err := net.ParseCIDR(ipString)
+	if err != nil {
+		t.Errorf("Failed because %v", err)
+	}
+	nl.Add(ipString)
+	if len(nl) < 1 {
+		t.Errorf("Did not add element")
+	}
+}
+
 func TestParseNetlist(t *testing.T) {
 	var tests = []struct {
 		input    string

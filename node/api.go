@@ -57,6 +57,16 @@ func (api *PrivateAdminAPI) AddPeer(url string) (bool, error) {
 	return true, nil
 }
 
+// BlacklistPeer
+func (api *PrivateAdminAPI) BlacklistPeer(ip string) (bool, error) {
+	server := api.node.Server()
+	if server == nil {
+		return false, ErrNodeStopped
+	}
+	server.BlacklistPeer(ip)
+	return true, nil
+}
+
 // RemovePeer disconnects from a remote node if the connection exists
 func (api *PrivateAdminAPI) RemovePeer(url string) (bool, error) {
 	// Make sure the server is running, fail otherwise

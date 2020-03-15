@@ -115,10 +115,12 @@ type Config struct {
 	// allowed to connect, even above the peer limit.
 	TrustedNodes []*enode.Node
 
+	BlacklistedNodes []string
+
 	// Connectivity can be restricted to certain IP networks.
 	// If this option is set to a non-nil value, only hosts which match one of the
 	// IP networks contained in the list are considered.
-	NetRestrict *netutil.Netlist `toml:",omitempty"`
+	NetRestrict *netutil.Netlist
 
 	// NodeDatabase is the path to the database containing the previously seen
 	// live nodes in the network.
@@ -322,6 +324,17 @@ func (srv *Server) PeerCount() int {
 // will attempt to reconnect the peer.
 func (srv *Server) AddPeer(node *enode.Node) {
 	srv.dialsched.addStatic(node)
+}
+
+// BlacklistPeer adds the given node to the restriction list
+// and removes it from the static nodes list
+func (srv *Server) BlacklistPeer(ip string) {
+	if srv.BlacklistedNodes == nil {
+		srv.log.Warn("Blacklist is nil")
+		return
+	}
+	srv.log.Info("Blacklisting peer: " + ip)
+	srv.BlacklistedNodes = append(srv.BlacklistedNodes, ip)
 }
 
 // RemovePeer removes a node from the static node set. It also disconnects from the given
@@ -867,6 +880,11 @@ func (srv *Server) listenLoop() {
 		}
 
 		remoteIP := netutil.AddrIP(fd.RemoteAddr())
+		srv.log.Info("Checking inbound connection " + remoteIP.String())
+		srv.log.Info("Contents of blacklist is currently:")
+		for _, nodeIP := range srv.BlacklistedNodes {
+			srv.log.Info(nodeIP)
+		}
 		if err := srv.checkInboundConn(fd, remoteIP); err != nil {
 			srv.log.Debug("Rejected inbound connnection", "addr", fd.RemoteAddr(), "err", err)
 			fd.Close()
@@ -901,6 +919,12 @@ func (srv *Server) checkInboundConn(fd net.Conn, remoteIP net.IP) error {
 	srv.inboundHistory.expire(now, nil)
 	if !netutil.IsLAN(remoteIP) && srv.inboundHistory.contains(remoteIP.String()) {
 		return fmt.Errorf("too many attempts")
+	}
+	// Reject blacklisted peers
+	for _, ip := range srv.BlacklistedNodes {
+		if ip == remoteIP.String() {
+			return fmt.Errorf("peer is blacklisted")
+		}
 	}
 	srv.inboundHistory.add(remoteIP.String(), now.Add(inboundThrottleTime))
 	return nil

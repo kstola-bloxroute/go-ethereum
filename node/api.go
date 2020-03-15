@@ -88,6 +88,26 @@ func (api *PrivateAdminAPI) AddTrustedPeer(url string) (bool, error) {
 	return true, nil
 }
 
+// BlacklistPeer adds the ip to the server's blacklist
+func (api *PrivateAdminAPI) BlacklistPeer(ip string) (bool, error) {
+	server := api.node.Server()
+	if server == nil {
+		return false, ErrNodeStopped
+	}
+	server.BlacklistPeer(ip)
+	return true, nil
+}
+
+// GetBlacklist prints out the current blacklist
+func (api *PrivateAdminAPI) GetBlacklist() (bool, error) {
+	server := api.node.Server()
+	if server == nil {
+		return false, ErrNodeStopped
+	}
+	server.GetBlacklist()
+	return true, nil
+}
+
 // RemoveTrustedPeer removes a remote node from the trusted peer set, but it
 // does not disconnect it automatically.
 func (api *PrivateAdminAPI) RemoveTrustedPeer(url string) (bool, error) {

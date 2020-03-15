@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"net"
 	"sort"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -110,6 +111,9 @@ type Config struct {
 	// Static nodes are used as pre-configured connections which are always
 	// maintained and re-connected on disconnects.
 	StaticNodes []*enode.Node
+
+	// Slice of IP's that the node will drop upon connection
+	BlacklistedNodes []net.IP
 
 	// Trusted nodes are used as pre-configured connections which are always
 	// allowed to connect, even above the peer limit.
@@ -323,6 +327,29 @@ func (srv *Server) PeerCount() int {
 func (srv *Server) AddPeer(node *enode.Node) {
 	srv.dialsched.addStatic(node)
 }
+
+// BlacklistPeer adds the given ip address to the list of blacklisted nodes
+func (srv *Server) BlacklistPeer(s string) { // TODO: use enode as parameter instead
+	if ip := net.ParseIP(s); ip != nil {
+		srv.log.Info(fmt.Sprintf("Adding ip %s to blacklist", s))
+		srv.BlacklistedNodes = append(srv.BlacklistedNodes, ip)
+		// TODO: call RemovePeer
+	} else {
+		srv.log.Error(fmt.Sprintf("Failed to parse ip %s", s))
+	}
+}
+
+// GetBlacklist prints out the current list of blacklisted IPs
+func (srv *Server) GetBlacklist() {
+	srv.log.Info("Blacklisted IPs: ")
+	ips := []string{}
+	for _, ip := range srv.BlacklistedNodes {
+		ips = append(ips, ip.String())
+	}
+	srv.log.Info(strings.Join(ips, " "))
+}
+
+// TODO: Remove ip from blacklist (whitelist?)
 
 // RemovePeer removes a node from the static node set. It also disconnects from the given
 // node if it is currently connected as a peer.
@@ -891,6 +918,12 @@ func (srv *Server) listenLoop() {
 func (srv *Server) checkInboundConn(fd net.Conn, remoteIP net.IP) error {
 	if remoteIP == nil {
 		return nil
+	}
+	// Reject blacklisted Peers
+	for _, blacklistedIP := range srv.BlacklistedNodes {
+		if blacklistedIP.Equal(remoteIP) {
+			return fmt.Errorf("ip is blacklisted")
+		}
 	}
 	// Reject connections that do not match NetRestrict.
 	if srv.NetRestrict != nil && !srv.NetRestrict.Contains(remoteIP) {
